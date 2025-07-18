@@ -1,0 +1,87 @@
+local function KillAll()
+    local player = game.Players.LocalPlayer
+
+    local function changeHitSound()
+        local effects = game:GetService("ReplicatedStorage"):FindFirstChild("Effects")
+        if effects and effects:FindFirstChild("hs") and effects.hs:FindFirstChild("sound") then
+            local sound = effects.hs.sound
+            sound.SoundId = "rbxassetid://13114759"
+            sound.Volume = 10
+            sound.Playing = false
+        end
+    end
+
+    local function dmg(target, hpart, damage)
+        local tool = player.Character:FindFirstChildWhichIsA("Tool")
+        if not tool then return end
+
+        game:GetService("ReplicatedStorage").InflictTarget:FireServer(
+            tool,
+            player,
+            target.Character.Humanoid,
+            target.Character[hpart],
+            damage,
+            {0,0,false,false, tool.GunScript_Server.IgniteScript, tool.GunScript_Server.IcifyScript,100,100},
+            {false,5,3},
+            target.Character[hpart],
+            {false,{1930359546},1,1.5,1},
+            nil,
+            nil,
+            true
+        )
+    end
+
+    local function checkgun()
+        local gunTool = nil
+        for _, v in pairs(player.Backpack:GetDescendants()) do
+            if v:IsA("LocalScript") and v.Name == "GunScript_Local" then
+                gunTool = v.Parent
+                break
+            end
+        end
+        if not gunTool and player.Character then
+            for _, v in pairs(player.Character:GetDescendants()) do
+                if v:IsA("LocalScript") and v.Name == "GunScript_Local" then
+                    gunTool = v.Parent
+                    break
+                end
+            end
+        end
+        if gunTool and gunTool:IsA("Tool") then
+            player.Character:WaitForChild("Humanoid"):EquipTool(gunTool)
+        end
+        return gunTool
+    end
+
+    changeHitSound()
+
+    local gun = checkgun()
+    if not gun then
+        return "Gun not found"
+    end
+
+    local handle = gun:FindFirstChild("Handle")
+    local muzzleEffect = gun:FindFirstChild("GunScript_Local") and gun.GunScript_Local:FindFirstChild("MuzzleEffect")
+    if handle and muzzleEffect and game.ReplicatedStorage:FindFirstChild("VisualizeMuzzle") then
+        game.ReplicatedStorage.VisualizeMuzzle:FireServer(
+            handle,
+            true,
+            {false,7,Color3.new(1,1.1098,0),15,true,0.02},
+            muzzleEffect
+        )
+    end
+
+    local startTime = os.clock()
+    while os.clock() - startTime < 5 do
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= player and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") then
+                dmg(v, "Head", 1000)
+            end
+        end
+        task.wait(0.1)
+    end
+
+    return "Kill loop finished"
+end
+
+return KillAll()
